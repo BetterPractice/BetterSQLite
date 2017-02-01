@@ -7,12 +7,15 @@
 //
 
 import XCTest
-@testable import SQLite
+import Foundation
+import Dispatch
 
 import Model
 import Async
 
-class ConnectionPoolTests: XCTestCase {
+@testable import SQLite
+
+public class ConnectionPoolTests: XCTestCase {
 
     let simpleQuery = "SELECT 1 + 2 as Sum"
     let sleepQuery = "SELECT SLEEP(0.1) as Delay"
@@ -21,7 +24,7 @@ class ConnectionPoolTests: XCTestCase {
     let filename = ":memory:"
     var pool: ConnectionPool!
     
-    override func setUp() {
+    public override func setUp() {
         super.setUp()
         
         pool = ConnectionPool(bounds: [1..<10]) { [unowned self] (poolIndex: Int, itemIndex: Int) in
@@ -45,7 +48,7 @@ class ConnectionPoolTests: XCTestCase {
         }
     }
     
-    override func tearDown() {
+    public override func tearDown() {
         pool = nil
         
         super.tearDown()
@@ -189,5 +192,13 @@ class ConnectionPoolTests: XCTestCase {
                 XCTAssert(queryValues[j]==expectedValues[j], "Wrong value at (\(i), \(j)).")
             }
         }
+    }
+    
+    public static var allTests : [(String, (ConnectionPoolTests) -> () throws -> Void)] {
+        return [
+            ("testSimpleQuery", testSimpleQuery),
+            ("testSleep",       testSleep),
+            ("testConcurrent",  testConcurrent),
+        ]
     }
 }

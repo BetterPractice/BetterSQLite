@@ -2,7 +2,7 @@ import XCTest
 @testable import SQLite
 import Model
 
-class BetterSQLiteTests: XCTestCase {
+public class BetterSQLiteTests: XCTestCase {
     
     let filename = ":memory:"
     
@@ -12,11 +12,11 @@ class BetterSQLiteTests: XCTestCase {
     var connection: UnsafeConnection!
     
     
-    override func setUp() {
+    public override func setUp() {
         connection = try! UnsafeConnection(filename: filename)
     }
     
-    override func tearDown() {
+    public override func tearDown() {
         try? FileManager.default.removeItem(atPath: filename)
     }
     
@@ -266,7 +266,7 @@ class BetterSQLiteTests: XCTestCase {
         }
     }
     
-    static var allTests : [(String, (BetterSQLiteTests) -> () throws -> Void)] {
+    public static var allTests : [(String, (BetterSQLiteTests) -> () throws -> Void)] {
         return [
             ("testPrepareStatement", testPrepareStatement),
             ("testExecutePreparedQuery", testExecutePreparedQuery),

@@ -1,6 +1,7 @@
 import XCTest
-@testable import BetterSQLiteTests
+@testable import SQLiteTests
 
 XCTMain([
-     testCase(BetterSQLiteTests.allTests),
+     testCase(ConnectionPoolTests.allTests),
+     testCase(UnsafeConnectionTests.allTests),
 ])

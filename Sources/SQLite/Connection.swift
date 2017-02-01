@@ -7,9 +7,10 @@
 //
 
 import Foundation
+import Dispatch
+
 import Model
 import Async
-
 import CSQLite3
 
 public final class Connection {
