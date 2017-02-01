@@ -102,7 +102,7 @@ public class ConnectionPoolTests: XCTestCase {
             }
             
             
-            let startDate = Date()
+//            let startDate = Date()
             for index in 0..<ops {
                 joiner.markStart(identifier: index)
                 queue.addOperation {
@@ -115,10 +115,10 @@ public class ConnectionPoolTests: XCTestCase {
                             XCTFail("Error in \(#function): \(error)")
                         }
                     }
-                    let elapsed = -startDate.timeIntervalSinceNow
-                    let total = self.pool.currentPoolSize()
-                    let avail = self.pool.availableItemCount()
-                    print("Time since queuing of op \(index): \(elapsed)\n\tAvailable: \(avail)\n\tTotal: \(total)")
+//                    let elapsed = -startDate.timeIntervalSinceNow
+//                    let total = self.pool.currentPoolSize()
+//                    let avail = self.pool.availableItemCount()
+//                    print("Time since queuing of op \(index): \(elapsed)\n\tAvailable: \(avail)\n\tTotal: \(total)")
                     joiner.markCompletion(identifier: index, result: MethodResult.success())
                 }
             }

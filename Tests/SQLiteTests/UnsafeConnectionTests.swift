@@ -1,8 +1,11 @@
 import XCTest
-@testable import SQLite
+
+import Foundation
 import Model
 
-public class BetterSQLiteTests: XCTestCase {
+@testable import SQLite
+
+public class UnsafeConnectionTests: XCTestCase {
     
     let filename = ":memory:"
     
@@ -266,7 +269,7 @@ public class BetterSQLiteTests: XCTestCase {
         }
     }
     
-    public static var allTests : [(String, (BetterSQLiteTests) -> () throws -> Void)] {
+    public static var allTests : [(String, (UnsafeConnectionTests) -> () throws -> Void)] {
         return [
             ("testPrepareStatement", testPrepareStatement),
             ("testExecutePreparedQuery", testExecutePreparedQuery),
