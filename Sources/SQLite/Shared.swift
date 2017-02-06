@@ -15,11 +15,20 @@ let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 public enum SqliteError: Error {
     case unexpectedResult(Int32)
+    case busy
+    case locked
 }
 
 @discardableResult
 internal func isOK(_ value: Int32) throws {
-    if value != SQLITE_OK {
+    switch value {
+    case SQLITE_OK:
+        return
+    case SQLITE_BUSY:
+        throw SqliteError.busy
+    case SQLITE_LOCKED:
+        throw SqliteError.locked
+    default:
         throw SqliteError.unexpectedResult(value)
     }
 }

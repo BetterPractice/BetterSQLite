@@ -138,6 +138,10 @@ public class Statement  {
             return .error
         case SQLITE_DONE:
             return .done
+        case SQLITE_BUSY:
+            throw SqliteError.busy
+        case SQLITE_LOCKED:
+            throw SqliteError.locked
         default:
             throw SqliteError.unexpectedResult(stepResult)
         }

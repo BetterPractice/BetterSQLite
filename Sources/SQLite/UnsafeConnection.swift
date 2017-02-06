@@ -74,6 +74,7 @@ public final class UnsafeConnection {
     private var accHandlers = [String: AccumulatorData]()
     
     private var nativeHandle: OpaquePointer
+    private let dontClose: Bool
     
     //MARK: - Lifecycle
     
@@ -85,19 +86,37 @@ public final class UnsafeConnection {
         try isOK(sqlite3_open_v2(filename, &ptr, flags, nil))
         if let ptr = ptr {
             nativeHandle = ptr
+            dontClose = false
         } else {
             throw ConnectionError.notConnected
         }
     }
     
     internal init(nativeHandle: OpaquePointer) {
+        dontClose = true
         self.nativeHandle = nativeHandle
     }
     
     deinit {
-        sqlite3_close_v2(nativeHandle)
+        if !dontClose {
+            sqlite3_close_v2(nativeHandle)
+        }
     }
 
+    //MARK: - Settings
+    
+    public func enableRetryOnBusy() throws {
+        func busyHandler(_ ptr: UnsafeMutableRawPointer?, _ count: Int32) -> Int32 {
+            return 1
+        }
+        try isOK(sqlite3_busy_handler(nativeHandle, busyHandler, nil))
+    }
+    
+    public func disableRetryOnBusy() throws {
+        try isOK(sqlite3_busy_handler(nativeHandle, nil, nil))
+    }
+    
+    
     //MARK: - Statement Methods
     
     public func prepare(sql: String) throws -> Statement {

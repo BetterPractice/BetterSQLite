@@ -21,14 +21,18 @@ public class ConnectionPoolTests: XCTestCase {
     let sleepQuery = "SELECT SLEEP(0.1) as Delay"
     let simpleQueryColumnName = "Sum"
 
-    let filename = ":memory:"
+    let filename = "TestDatabase.sqlite"
     var pool: ConnectionPool!
     
     public override func setUp() {
         super.setUp()
         
+        let pwd = FileManager.default.currentDirectoryPath
+        print("PWD: \(pwd)")
+        try? FileManager.default.removeItem(atPath: filename)
         pool = ConnectionPool(bounds: [1..<10]) { [unowned self] (poolIndex: Int, itemIndex: Int) in
             let result = try! UnsafeConnection(filename: self.filename)
+            try! result.enableRetryOnBusy()
             
             result.registerFunction(name: "SLEEP", argCount: 1, deterministic: false) { (args) -> Model in
                 let arg = args[0]
@@ -56,7 +60,7 @@ public class ConnectionPoolTests: XCTestCase {
     
     func testSimpleQuery() {
         
-        try! pool.using { (connection: UnsafeConnection) in
+        pool.using { (connection: UnsafeConnection) in
 
             do {
                 let result = try connection.query(sql: simpleQuery)
@@ -71,7 +75,7 @@ public class ConnectionPoolTests: XCTestCase {
     }
     
     func testSleep() {
-        try! pool.using { (connection) in
+        pool.using { (connection) in
             do {
                 let result = try connection.query(sql: sleepQuery)
                 
@@ -101,24 +105,18 @@ public class ConnectionPoolTests: XCTestCase {
                 expectation.fulfill()
             }
             
-            
-//            let startDate = Date()
             for index in 0..<ops {
                 joiner.markStart(identifier: index)
                 queue.addOperation {
-                    try! self.pool.using{ [unowned self] (connection) in
+                    self.pool.using{ [unowned self] (connection) in
                         do {
-                            let _ = try connection.query(sql: self.sleepQuery)
-                            //                        self.validate(queryResult: result, rowCount: 1, columnNames: ["Delay"])
+                            let result = try connection.query(sql: self.sleepQuery)
+                            self.validate(queryResult: result, rowCount: 1, columnNames: ["Delay"])
                         }
                         catch {
                             XCTFail("Error in \(#function): \(error)")
                         }
                     }
-//                    let elapsed = -startDate.timeIntervalSinceNow
-//                    let total = self.pool.currentPoolSize()
-//                    let avail = self.pool.availableItemCount()
-//                    print("Time since queuing of op \(index): \(elapsed)\n\tAvailable: \(avail)\n\tTotal: \(total)")
                     joiner.markCompletion(identifier: index, result: MethodResult.success())
                 }
             }
@@ -134,6 +132,83 @@ public class ConnectionPoolTests: XCTestCase {
             
         }
     }
+    
+    func testAtomicTransaction() {
+        let tableName = "AtomicIncrement"
+        let keyName = "key"
+        let iterations = 1000
+        
+        func untilNotBusyOrLocked<T>(_ block: @autoclosure () throws -> T) rethrows -> T {
+            while true {
+                do {
+                    return try block()
+                }
+//                catch let error as SqliteError {
+//                    switch error {
+//                    case .busy, .locked:
+//                        usleep(1000)
+//                    default:
+//                        throw error
+//                    }
+//                }
+                catch {
+                    guard let sqliteError = error as? SqliteError else {
+                        throw error
+                    }
+                    if case .busy = sqliteError {
+                        usleep(1000)
+                    } else if case .locked = sqliteError {
+                        usleep(1000)
+                    } else {
+                        throw sqliteError
+                    }
+                }
+            }
+        }
+
+        let create = "CREATE TABLE \(tableName) (key TEXT, value INT )"
+        let insert = "INSERT INTO \(tableName) VALUES (?, ?)"
+        let drop = "DROP TABLE \(tableName)"
+        
+        measure {
+            self.pool.using { (connection) in
+                try! connection.execute(sql: create)
+                try! connection.execute(sql: insert, args: [Model(keyName), Model(0)])
+            }
+            
+            let joiner: TaskJoiner<Int, Void> = TaskJoiner()
+            for i in 0..<iterations {
+                joiner.markStart(identifier: i)
+            }
+            
+            
+            let fetch = "SELECT value FROM \(tableName) WHERE key = ?"
+            let update = "UPDATE \(tableName) SET value = ? WHERE key = ?"
+            
+            DispatchQueue.concurrentPerform(iterations: iterations) { (iteration) in
+                self.pool.using { (connection) in
+                    try! connection.beginTransaction(.immediate)
+                    
+                    let fetched = try! connection.query(sql: fetch, args: [Model(keyName)])
+                    let value: Int64 = fetched.rows[0].values[0].int64!
+                    try! connection.execute(sql: update, args: [Model(value + 1), Model(keyName)])
+                    try! connection.commitTransaction()
+                }
+                joiner.markCompletion(identifier: iteration, result: .success())
+            }
+            
+            let _ = try! joiner.wait()
+            
+            
+            self.pool.using { (connection) in
+                let fetched = try! connection.query(sql: fetch, args: [Model(keyName)])
+                let value = fetched.rows[0].values[0].int64!
+                XCTAssert(value == Int64(iterations))
+                try! connection.execute(sql: drop)
+            }
+        }
+    }
+
 
     //MARK: - Private Methods
     
@@ -153,10 +228,10 @@ public class ConnectionPoolTests: XCTestCase {
         }()
         
         // Print Mapping
-        print("Number of elements in mapping: \(queryResult.mapping.count)")
-        for (name, index) in queryResult.mapping {
-            print("\(name) -> \(index)")
-        }
+//        print("Number of elements in mapping: \(queryResult.mapping.count)")
+//        for (name, index) in queryResult.mapping {
+//            print("\(name) -> \(index)")
+//        }
         
         // Check Column Names
         if let columnNames = columnNames {
@@ -167,12 +242,12 @@ public class ConnectionPoolTests: XCTestCase {
         }
         
         // Print Rows
-        print("Number of rows in result: \(queryResult.rows.count)")
-        for (rowIndex, aRow) in queryResult.rows.enumerated() {
-            for (valueIndex, aValue) in aRow.values.enumerated() {
-                print("Value at (\(rowIndex), \(valueIndex)): \(aValue)")
-            }
-        }
+//        print("Number of rows in result: \(queryResult.rows.count)")
+//        for (rowIndex, aRow) in queryResult.rows.enumerated() {
+//            for (valueIndex, aValue) in aRow.values.enumerated() {
+//                print("Value at (\(rowIndex), \(valueIndex)): \(aValue)")
+//            }
+//        }
         
         // Check Columm Counts
         XCTAssert(queryResult.rows.count == rowCount, "Wrong number of rows in result.")
@@ -199,6 +274,7 @@ public class ConnectionPoolTests: XCTestCase {
             ("testSimpleQuery", testSimpleQuery),
             ("testSleep",       testSleep),
             ("testConcurrent",  testConcurrent),
+            ("testAtomicTransaction", testAtomicTransaction),
         ]
     }
 }

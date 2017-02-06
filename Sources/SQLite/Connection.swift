@@ -53,7 +53,7 @@ public final class Connection {
     }
 
     public func prepare(sql: String) throws -> Statement {
-        return try prepareAsync(sql: sql).wait().value()
+        return try prepareAsync(sql: sql).wait()
     }
     
     //MARK: - Executing Updates
@@ -65,7 +65,7 @@ public final class Connection {
 
     @discardableResult
     public func execute(sql: String, args: [Model] = []) throws -> UpdateResult {
-        return try executeAsync(sql: sql, args: args).wait().value()
+        return try executeAsync(sql: sql, args: args).wait()
     }
     
     @discardableResult
@@ -75,7 +75,7 @@ public final class Connection {
     
     @discardableResult
     public func execute(statement: Statement, args: [Model] = []) throws -> UpdateResult {
-        return try executeAsync(statement: statement, args: args).wait().value()
+        return try executeAsync(statement: statement, args: args).wait()
     }
     //MARK: - Execute Query
     
@@ -84,7 +84,7 @@ public final class Connection {
     }
     
     public func query(sql: String, args: [Model] = []) throws -> QueryResult {
-        return try queryAsync(sql: sql, args: args).wait().value()
+        return try queryAsync(sql: sql, args: args).wait()
     }
     
     public func queryAsync(statement: Statement, args: [Model] = []) -> AsyncTask<QueryResult> {
@@ -92,7 +92,7 @@ public final class Connection {
     }
         
     public func query(statement: Statement, args: [Model] = []) throws -> QueryResult {
-        return try queryAsync(statement: statement, args: args).wait().value()
+        return try queryAsync(statement: statement, args: args).wait()
     }
     
     //MARK: - Transaction Support

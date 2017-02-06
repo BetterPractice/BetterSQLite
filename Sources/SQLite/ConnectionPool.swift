@@ -26,7 +26,7 @@ open class ConnectionPool {
         }
     }
     
-    public func using(pool index: Int = 0, handler: (UnsafeConnection) -> Void) throws {
+    public func using(pool index: Int = 0, handler: (UnsafeConnection) -> Void) {
         let pool = pools[index]
         pool.using(handler: handler)
     }
