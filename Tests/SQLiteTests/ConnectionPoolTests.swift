@@ -34,7 +34,7 @@ public class ConnectionPoolTests: XCTestCase {
             let result = try! UnsafeConnection(filename: self.filename)
             try! result.enableRetryOnBusy()
             
-            result.registerFunction(name: "SLEEP", argCount: 1, deterministic: false) { (args) -> Model in
+            result.registerFunction(name: "SLEEP", argCount: 1, deterministic: false) { (_, args) -> Model in
                 let arg = args[0]
                 var targetDelay: TimeInterval = 0
                 if let value = arg.int64 {

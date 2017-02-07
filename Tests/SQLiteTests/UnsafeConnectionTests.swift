@@ -134,7 +134,7 @@ public class UnsafeConnectionTests: XCTestCase {
     
     func testTrivialCustomFunction() {
         
-        connection.registerFunction(name: "MyFunction", argCount: 0) { (_) -> Model in
+        connection.registerFunction(name: "MyFunction", argCount: 0) { (_, _) in
             return Model(1)
         }
         
@@ -151,7 +151,7 @@ public class UnsafeConnectionTests: XCTestCase {
     
     func testComplexCustomFunction() {
         connection.registerFunction(name: "SQR", argCount: 1) {
-            let paramValue = try $0[0].int64Value()
+            let paramValue = try $1[0].int64Value()
             return Model(paramValue * paramValue)
         }
         
@@ -168,7 +168,7 @@ public class UnsafeConnectionTests: XCTestCase {
     
     func testClearCustomFunction() {
         
-        connection.registerFunction(name: "MyFunction", argCount: 0) { (_) -> Model in
+        connection.registerFunction(name: "MyFunction", argCount: 0) { (_, _) -> Model in
             return Model(1)
         }
         connection.clearFunction(name: "MyFunction", argCount: 0)

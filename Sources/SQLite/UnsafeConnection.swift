@@ -37,9 +37,9 @@ public final class UnsafeConnection {
     // Although my instinct was to make this a `struct` it must be an object
     private class FunctionData {
         public var name: String
-        public var handler: ([Model]) throws -> Model
+        public var handler: (UnsafeConnection, [Model]) throws -> Model
         
-        public init(name: String, handler: @escaping ([Model]) throws -> Model) {
+        public init(name: String, handler: @escaping (UnsafeConnection, [Model]) throws -> Model) {
             self.name = name
             self.handler = handler
         }
@@ -213,7 +213,7 @@ public final class UnsafeConnection {
     
     //MARK: - Custom Function Methods
     
-    public func registerFunction(name: String, argCount: Int, deterministic: Bool = true, handler: @escaping ([Model]) throws -> Model) {
+    public func registerFunction(name: String, argCount: Int, deterministic: Bool = true, handler: @escaping (UnsafeConnection, [Model]) throws -> Model) {
 
         // This function cannot capture `self` or any context
         func blockWrapper(_ sqliteHandle: OpaquePointer?, _ argc: Int32, _ argv: UnsafeMutablePointer<OpaquePointer?>?) {
@@ -228,7 +228,8 @@ public final class UnsafeConnection {
 
             let convertedArgs = UnsafeConnection.convertedArgs(argc: argc, argv: argv)
             do {
-                let result = try handler(convertedArgs)
+                let innerConnection = UnsafeConnection(nativeHandle: sqliteHandle)
+                let result = try handler(innerConnection, convertedArgs)
                 UnsafeConnection.submit(sqliteHandle: sqliteHandle, result: result)
             }
             catch {
