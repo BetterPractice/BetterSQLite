@@ -15,7 +15,7 @@ import CSQLite3
 
 public final class Connection {
     
-    fileprivate let unsafeConnection: UnsafeConnection
+    public let unsafeConnection: UnsafeConnection
     private let workQueue: DispatchQueue = DispatchQueue(label: "SwiftSQLite Work Queue")
 
     public var isReadOnly: Bool {
