@@ -26,6 +26,14 @@ open class ConnectionPool {
         }
     }
     
+    public init(filename: String, bounds: Range<Int> = 1..<10) {
+        pools.append(ResourcePool(bounds: bounds, creationHandler: { (_) -> UnsafeConnection in
+            let connection = try! UnsafeConnection(filename: filename)
+            try! connection.enableRetryOnBusy()
+            return connection
+        }))
+    }
+    
     public func using(pool index: Int = 0, handler: (UnsafeConnection) -> Void) {
         let pool = pools[index]
         pool.using(handler: handler)
